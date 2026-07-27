@@ -1,12 +1,12 @@
-import os
+import streamlit as st
+import streamlit.components.v1 as components
 
+# 1. Cấu hình trang Streamlit
+st.set_page_config(page_title="3D SMT Feeder Dashboard", layout="wide")
 
-def generate_v6_3d_dashboard(
-    output_filename: str = "Feeder_Analyzer_V6_3D.html",
-) -> str:
-    """Generates the V6 3D HTML Application with enhanced WebGL & Glassmorphism UI."""
-
-    html_content = """<!DOCTYPE html>
+# 2. Toàn bộ mã nguồn HTML/CSS/JS của giao diện V6 3D
+html_v6 = """
+<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
@@ -96,7 +96,7 @@ def generate_v6_3d_dashboard(
             text-align: center;
         }
         .kpi-title { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
-        .kpi-value { font-size: 22px; fontweight: bold; color: #00d2ff; margin-top: 5px; }
+        .kpi-value { font-size: 22px; font-weight: bold; color: #00d2ff; margin-top: 5px; }
 
         #charts-container { display: flex; flex-wrap: wrap; gap: 25px; }
         .chart-box { 
@@ -177,7 +177,6 @@ def generate_v6_3d_dashboard(
         let parsedData = [];
         let startIndex = -1;
 
-        // Tự động tìm dòng bắt đầu dữ liệu
         for (let i = 0; i < jsonData.length; i++) {
             const row = jsonData[i];
             if (row && row.length >= 5 && (row[0] === 1 || String(row[0]).trim() === '1')) {
@@ -186,7 +185,6 @@ def generate_v6_3d_dashboard(
             }
         }
 
-        // Dự phòng nếu không thấy tiêu chuẩn dòng '1'
         if (startIndex === -1) {
             for (let i = 0; i < jsonData.length; i++) {
                 const r = jsonData[i];
@@ -304,14 +302,8 @@ def generate_v6_3d_dashboard(
     }
 </script>
 </body>
-</html>"""
+</html>
+"""
 
-    with open(output_filename, "w", encoding="utf-8") as f:
-        f.write(html_content)
-
-    return f"Bản nâng cấp 3D V6 đã được tạo thành công tại: {output_filename}"
-
-
-if __name__ == "__main__":
-    result = generate_v6_3d_dashboard()
-    print(result)
+# 3. Yêu cầu Streamlit nhúng (embed) đoạn HTML này lên màn hình
+components.html(html_v6, height=950, scrolling=True)
