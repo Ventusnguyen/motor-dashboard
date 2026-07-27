@@ -30,22 +30,25 @@ with tab1:
         counts_input = st.text_input("Số lượng tương ứng (cách nhau bởi dấu phẩy):", "1928, 93, 11, 6, 2")
     
     with col2:
-        defects = [x.strip() for x in defects_input.split(',')]
-        counts = [int(x.strip()) for x in counts_input.split(',')]
-        
-        if len(defects) == len(counts):
-            fig, ax1 = plt.subplots(figsize=(8, 4))
-            cum_percentage = np.cumsum(counts) / sum(counts) * 100
+        try:
+            defects = [x.strip() for x in defects_input.split(',')]
+            counts = [int(x.strip()) for x in counts_input.split(',')]
             
-            ax1.bar(defects, counts, color="crimson")
-            ax1.set_ylabel("Số lượng lỗi", color="crimson")
-            ax1_twin = ax1.twinx()
-            ax1_twin.plot(defects, cum_percentage, color="blue", marker="D")
-            ax1_twin.set_ylabel("Tích lũy (%)", color="blue")
-            
-            st.pyplot(fig)
-        else:
-            st.error("Số lượng tên lỗi và số lượng dữ liệu không khớp nhau!")
+            if len(defects) == len(counts):
+                fig, ax1 = plt.subplots(figsize=(8, 4))
+                cum_percentage = np.cumsum(counts) / sum(counts) * 100
+                
+                ax1.bar(defects, counts, color="crimson")
+                ax1.set_ylabel("Số lượng lỗi", color="crimson")
+                ax1_twin = ax1.twinx()
+                ax1_twin.plot(defects, cum_percentage, color="blue", marker="D")
+                ax1_twin.set_ylabel("Tích lũy (%)", color="blue")
+                
+                st.pyplot(fig)
+            else:
+                st.error("Số lượng tên lỗi và số lượng dữ liệu không khớp nhau!")
+        except Exception as e:
+            st.error(f"Lỗi nhập dữ liệu: {e}")
 
 # ==========================================
 # TAB 2: HISTOGRAM
@@ -73,7 +76,7 @@ with tab2:
         st.pyplot(fig)
 
 # ==========================================
-# TAB 3: BOXPLOT
+# TAB 3: BOXPLOT (ĐÃ SỬA LỖI TẠI ĐÂY)
 # ==========================================
 with tab3:
     st.header("3. Boxplot: Mức Ya Motor vs Khả năng Hoạt động")
@@ -87,15 +90,20 @@ with tab3:
         spec_box_new = st.number_input("Tiêu chuẩn mới MAX (mm):", value=55.0)
         
     with col2:
-        ya_ok = [float(x.strip()) for x in ok_input.split(',')]
-        ya_ng = [float(x.strip()) for x in ng_input.split(',')]
-        
-        fig, ax3 = plt.subplots(figsize=(8, 4))
-        ax3.boxplot([ya_ok, ya_ng], labels=["ITF Feeder OK", "ITF Feeder NG"], patch_artist=True)
-        ax3.axhline(spec_box_old, color="red", linestyle="--", label="Cũ")
-        ax3.axhline(spec_box_new, color="green", linestyle="-.", label="Mới")
-        ax3.legend()
-        st.pyplot(fig)
+        try:
+            ya_ok = [float(x.strip()) for x in ok_input.split(',')]
+            ya_ng = [float(x.strip()) for x in ng_input.split(',')]
+            
+            fig, ax3 = plt.subplots(figsize=(8, 4))
+            ax3.boxplot([ya_ok, ya_ng], patch_artist=True)
+            ax3.set_xticks([1, 2])
+            ax3.set_xticklabels(["ITF Feeder OK", "ITF Feeder NG"]) # Đã sửa cách gán tên nhãn an toàn
+            ax3.axhline(spec_box_old, color="red", linestyle="--", label="Cũ")
+            ax3.axhline(spec_box_new, color="green", linestyle="-.", label="Mới")
+            ax3.legend()
+            st.pyplot(fig)
+        except Exception as e:
+            st.error(f"Lỗi dữ liệu: {e}")
 
 # ==========================================
 # TAB 4: SCATTER
@@ -110,17 +118,20 @@ with tab4:
         y_input = st.text_input("Offset Feeder (Y):", "1.359, 1.391, 1.359, 1.380, 1.385, 1.390, 1.391, 1.391, 1.850")
         
     with col2:
-        x_vals = [float(x.strip()) for x in x_input.split(',')]
-        y_vals = [float(y.strip()) for y in y_input.split(',')]
-        
-        if len(x_vals) == len(y_vals):
-            fig, ax4 = plt.subplots(figsize=(8, 4))
-            ax4.scatter(x_vals, y_vals, color="darkorange", s=80, edgecolors="k")
-            ax4.axvline(50.0, color="red", linestyle="--")
-            ax4.axvline(55.0, color="green", linestyle="-.")
-            st.pyplot(fig)
-        else:
-            st.error("Số lượng dữ liệu trục X và Y phải bằng nhau!")
+        try:
+            x_vals = [float(x.strip()) for x in x_input.split(',')]
+            y_vals = [float(y.strip()) for y in y_input.split(',')]
+            
+            if len(x_vals) == len(y_vals):
+                fig, ax4 = plt.subplots(figsize=(8, 4))
+                ax4.scatter(x_vals, y_vals, color="darkorange", s=80, edgecolors="k")
+                ax4.axvline(50.0, color="red", linestyle="--")
+                ax4.axvline(55.0, color="green", linestyle="-.")
+                st.pyplot(fig)
+            else:
+                st.error("Số lượng dữ liệu trục X và Y phải bằng nhau!")
+        except Exception as e:
+            st.error(f"Lỗi dữ liệu: {e}")
 
 # ==========================================
 # TAB 5: CONTROL CHART
@@ -134,16 +145,19 @@ with tab5:
         p_input = st.text_input("Tỷ lệ NG 10 ngày (%):", "2.57, 2.60, 2.51, 2.55, 2.58, 0.16, 0.15, 0.14, 0.16, 0.15")
         
     with col2:
-        p_rates = [float(x.strip()) for x in p_input.split(',')]
-        days = [f"Day {i}" for i in range(1, len(p_rates)+1)]
-        
-        if len(p_rates) >= 5:
-            fig, ax5 = plt.subplots(figsize=(8, 4))
-            ax5.plot(days[:5], p_rates[:5], marker="o", color="crimson", label="Spec Cũ")
-            ax5.plot(days[5:], p_rates[5:], marker="s", color="forestgreen", label="Spec Mới")
-            ax5.axhline(np.mean(p_rates[:5]), color="red", linestyle=":")
-            ax5.axhline(np.mean(p_rates[5:]), color="green", linestyle=":")
-            ax5.legend()
-            st.pyplot(fig)
-        else:
-            st.warning("Cần nhập ít nhất 5 ngày dữ liệu để vẽ biểu đồ.")
+        try:
+            p_rates = [float(x.strip()) for x in p_input.split(',')]
+            days = [f"Day {i}" for i in range(1, len(p_rates)+1)]
+            
+            if len(p_rates) >= 5:
+                fig, ax5 = plt.subplots(figsize=(8, 4))
+                ax5.plot(days[:5], p_rates[:5], marker="o", color="crimson", label="Spec Cũ")
+                ax5.plot(days[5:], p_rates[5:], marker="s", color="forestgreen", label="Spec Mới")
+                ax5.axhline(np.mean(p_rates[:5]), color="red", linestyle=":")
+                ax5.axhline(np.mean(p_rates[5:]), color="green", linestyle=":")
+                ax5.legend()
+                st.pyplot(fig)
+            else:
+                st.warning("Cần nhập ít nhất 5 ngày dữ liệu để vẽ biểu đồ.")
+        except Exception as e:
+            st.error(f"Lỗi dữ liệu: {e}")
