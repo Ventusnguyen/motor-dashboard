@@ -1,293 +1,317 @@
-"""
-Factory Data Engineering Module: Web-App Generator V3
-Generates an advanced standalone HTML Application with Cpk calculation, 
-PDF export, Local API simulation, and Smart Drift Warning (Nelson Rules).
-"""
-
 import os
 
-def generate_offline_analyzer_v3(output_filename: str = "Feeder_Analyzer_V3.html") -> str:
-    """Generates the V3 HTML Application with comprehensive QA features."""
-    
+
+def generate_v6_3d_dashboard(
+    output_filename: str = "Feeder_Analyzer_V6_3D.html",
+) -> str:
+    """Generates the V6 3D HTML Application with enhanced WebGL & Glassmorphism UI."""
+
     html_content = """<!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Feeder Data Auto Analyzer V3 (Pro)</title>
-    <!-- Thư viện xử lý Excel, Biểu đồ và Xuất PDF -->
+    <title>SMT Feeder 3D Digital Twin</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
-        .container { max-width: 1400px; margin: auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-        h1 { color: #2c3e50; font-size: 24px; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }
-        .control-panel { background: #eef2f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        /* Modern 3D / Glassmorphism Dark Theme */
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: radial-gradient(circle at top, #1a1a2e, #16213e, #0f3460);
+            color: #e0e0e0; 
+            margin: 0; 
+            padding: 20px; 
+            min-height: 100vh;
+        }
+        .container { 
+            max-width: 1500px; 
+            margin: auto; 
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px; 
+            border-radius: 16px; 
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5); 
+        }
+        h1 { 
+            color: #00d2ff; 
+            font-size: 26px; 
+            border-bottom: 2px solid rgba(0, 210, 255, 0.3); 
+            padding-bottom: 15px; 
+            margin-top: 0;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 210, 255, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .control-panel { 
+            background: rgba(0, 0, 0, 0.25); 
+            padding: 20px; 
+            border-radius: 12px; 
+            margin-bottom: 25px; 
+            display: flex; 
+            align-items: center; 
+            flex-wrap: wrap;
+            gap: 15px; 
+            border: 1px solid rgba(255,255,255,0.08);
+        }
         input[type="file"] { display: none; }
-        .btn { padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; transition: background 0.3s; color: white; }
-        .btn-upload { background-color: #3498db; }
-        .btn-upload:hover { background-color: #2980b9; }
-        .btn-pdf { background-color: #9b59b6; display: none; }
-        .btn-pdf:hover { background-color: #8e44ad; }
-        .btn-api { background-color: #e67e22; display: none; }
-        .btn-api:hover { background-color: #d35400; }
-        .file-list { flex-grow: 1; font-size: 14px; color: #555; }
-        #report-content { padding: 10px; }
-        #charts-container { display: flex; flex-wrap: wrap; gap: 20px; }
-        .chart-box { flex: 1 1 48%; min-width: 500px; height: 500px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 10px; }
-        #summary-stats { margin-bottom: 20px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 10px; }
-        .stat-card { background: #fff; border-left: 4px solid #34495e; padding: 10px 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 4px; }
-        .status-ok { border-left-color: #2ecc71; color: #27ae60; }
-        .status-ng { border-left-color: #e74c3c; color: #c0392b; }
-        .warning-text { color: red; font-weight: bold; }
+        .btn { 
+            padding: 12px 22px; 
+            border-radius: 8px; 
+            cursor: pointer; 
+            font-weight: bold; 
+            border: none; 
+            transition: all 0.3s ease; 
+            color: #fff; 
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            font-size: 13px;
+        }
+        .btn-upload { background: linear-gradient(45deg, #00d2ff, #3a7bd5); }
+        .btn-upload:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 210, 255, 0.4); }
+        .btn-demo { background: linear-gradient(45deg, #11998e, #38ef7d); }
+        .btn-demo:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(56, 239, 125, 0.4); }
+        
+        .file-list { flex-grow: 1; font-size: 14px; color: #00d2ff; font-weight: 500; }
+        
+        /* KPI Cards Grid */
+        .kpi-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .kpi-card {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+        .kpi-title { font-size: 12px; color: #aaa; text-transform: uppercase; letter-spacing: 1px; }
+        .kpi-value { font-size: 22px; fontweight: bold; color: #00d2ff; margin-top: 5px; }
+
+        #charts-container { display: flex; flex-wrap: wrap; gap: 25px; }
+        .chart-box { 
+            flex: 1 1 100%; 
+            height: 650px; 
+            background: rgba(0, 0, 0, 0.3); 
+            border: 1px solid rgba(255, 255, 255, 0.08); 
+            border-radius: 12px; 
+            padding: 15px; 
+        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <h1>🏭 SMT Feeder QA Dashboard V3</h1>
+    <h1>
+        <span>🚀 SMT Feeder - 3D Spatial Analysis Dashboard</span>
+        <span style="font-size: 12px; color: #888; text-transform: none;">V6 Digital Twin</span>
+    </h1>
     
-    <div class="control-panel">
-        <label for="excelUpload" class="btn btn-upload">📂 Chọn File Excel</label>
-        <input type="file" id="excelUpload" accept=".xlsx, .xls, .xlsm" multiple>
-        <select id="fileSelector" style="display:none; padding: 8px; border-radius: 4px;"></select>
-        <div class="file-list" id="fileInfo">Chưa có file nào được chọn.</div>
+    <div class="control-panel" id="dropZone">
+        <label for="excelUpload" class="btn btn-upload">📦 Upload Excel Data</label>
+        <input type="file" id="excelUpload" accept=".xlsx, .xls, .xlsm">
         
-        <!-- Các nút chức năng V3 -->
-        <button id="btnPdf" class="btn btn-pdf" onclick="exportPDF()">📄 Xuất PDF</button>
-        <button id="btnApi" class="btn btn-api" onclick="saveToDB()">💾 Lưu Database (Mock API)</button>
+        <button class="btn btn-demo" onclick="loadDemoData()">⚡ Load Demo Data</button>
+        
+        <div class="file-list" id="fileInfo">Awaiting data injection... (Click Demo or Upload File)</div>
     </div>
 
-    <!-- Vùng xuất báo cáo PDF -->
-    <div id="report-content">
-        <div id="summary-stats"></div>
-        <div id="charts-container">
-            <div id="scatterPlot" class="chart-box"></div>
-            <div id="trendPlot" class="chart-box"></div>
+    <!-- Summary KPI Cards -->
+    <div class="kpi-grid" id="kpiContainer" style="display:none;">
+        <div class="kpi-card">
+            <div class="kpi-title">Total Samples</div>
+            <div class="kpi-value" id="kpiSamples">0</div>
         </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Max Left Dev (mm)</div>
+            <div class="kpi-value" id="kpiMaxL" style="color:#3a7bd5;">0.000</div>
+        </div>
+        <div class="kpi-card">
+            <div class="kpi-title">Max Right Dev (mm)</div>
+            <div class="kpi-value" id="kpiMaxR" style="color:#e74c3c;">0.000</div>
+        </div>
+    </div>
+
+    <div id="charts-container">
+        <!-- 3D Scatter Plot Area -->
+        <div id="plot3D" class="chart-box"></div>
     </div>
 </div>
 
 <script>
-    let uploadedFiles = {}; 
-    let currentPayload = {}; // Dùng để lưu trữ trạng thái gửi API
-    const SPEC_LIMIT = 0.12;
-
     document.getElementById('excelUpload').addEventListener('change', handleFileSelect, false);
-    document.getElementById('fileSelector').addEventListener('change', function(e) {
-        processAndDraw(uploadedFiles[e.target.value], e.target.value);
-    });
 
     function handleFileSelect(e) {
-        const files = e.target.files;
-        if (files.length === 0) return;
+        const file = e.target.files[0];
+        if (!file) return;
         
-        document.getElementById('fileInfo').innerText = `Đang xử lý ${files.length} file...`;
-        const selector = document.getElementById('fileSelector');
-        selector.innerHTML = '';
-        uploadedFiles = {};
+        document.getElementById('fileInfo').innerText = `Processing Data: ${file.name}...`;
 
-        let filesProcessed = 0;
-
-        Array.from(files).forEach(file => {
-            const reader = new FileReader();
-            reader.onload = function(evt) {
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
                 const data = new Uint8Array(evt.target.result);
                 const workbook = XLSX.read(data, {type: 'array'});
                 const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
                 const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
                 
-                uploadedFiles[file.name] = jsonData;
-                
-                const option = document.createElement('option');
-                option.value = file.name;
-                option.text = file.name;
-                selector.appendChild(option);
-
-                filesProcessed++;
-                if(filesProcessed === files.length) {
-                    selector.style.display = files.length > 1 ? 'block' : 'none';
-                    document.getElementById('fileInfo').innerText = `Hoàn tất. Đang hiển thị file: ${files[0].name}`;
-                    
-                    // Hiển thị nút V3
-                    document.getElementById('btnPdf').style.display = 'block';
-                    document.getElementById('btnApi').style.display = 'block';
-                    
-                    processAndDraw(uploadedFiles[files[0].name], files[0].name);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        });
+                processAndDraw3D(jsonData, file.name);
+            } catch (err) {
+                alert("Error reading Excel file: " + err.message);
+            }
+        };
+        reader.readAsArrayBuffer(file);
     }
 
-    // JS Math functions for Cpk calculation
-    function getMean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
-    function getStdDev(arr, mean) {
-        let sum = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0);
-        return Math.sqrt(sum / (arr.length - 1)) || 0.0001; // Tránh chia cho 0
-    }
-    function getCpk(arr, usl, lsl) {
-        let mean = getMean(arr);
-        let std = getStdDev(arr, mean);
-        let cpku = (usl - mean) / (3 * std);
-        let cpkl = (mean - lsl) / (3 * std);
-        return Math.min(cpku, cpkl).toFixed(2);
-    }
-
-    // Nelson Rule: 7 consecutive points on the same side of 0
-    function checkNelsonRule(arr) {
-        let countPos = 0, countNeg = 0;
-        for(let v of arr) {
-            if(v > 0) { countPos++; countNeg = 0; }
-            else if (v < 0) { countNeg++; countPos = 0; }
-            else { countPos = 0; countNeg = 0; }
-            
-            if (countPos >= 7 || countNeg >= 7) return true;
-        }
-        return false;
-    }
-
-    function processAndDraw(jsonData, filename) {
+    function processAndDraw3D(jsonData, filename) {
         let parsedData = [];
-        let inspector = "Unknown", status = "Unknown";
-        
-        if(jsonData.length > 0 && jsonData[0].length >= 5) {
-            inspector = jsonData[0][3] || "Unknown";
-            status = jsonData[0][4] || "Unknown";
-        }
+        let startIndex = -1;
 
-        // Auto-detect block starting with '1'
+        // Tự động tìm dòng bắt đầu dữ liệu
         for (let i = 0; i < jsonData.length; i++) {
             const row = jsonData[i];
-            if (row && row.length >= 5 && String(row[0]).trim() === '1') {
-                for(let j = 0; j < 36; j++) {
-                    if (i + j < jsonData.length && jsonData[i+j].length >= 5) {
-                        let rowData = jsonData[i+j];
-                        parsedData.push({
-                            No: parseInt(rowData[0]),
-                            L_X: parseFloat(rowData[1] || 0), L_Y: parseFloat(rowData[2] || 0),
-                            R_X: parseFloat(rowData[3] || 0), R_Y: parseFloat(rowData[4] || 0)
-                        });
-                    }
-                }
+            if (row && row.length >= 5 && (row[0] === 1 || String(row[0]).trim() === '1')) {
+                startIndex = i;
                 break;
             }
         }
 
+        // Dự phòng nếu không thấy tiêu chuẩn dòng '1'
+        if (startIndex === -1) {
+            for (let i = 0; i < jsonData.length; i++) {
+                const r = jsonData[i];
+                if (r && r.length >= 5 && !isNaN(parseFloat(r[0])) && !isNaN(parseFloat(r[1]))) {
+                    startIndex = i;
+                    break;
+                }
+            }
+        }
+
+        if (startIndex !== -1) {
+            for (let i = startIndex; i < jsonData.length; i++) {
+                const row = jsonData[i];
+                if (!row || row.length < 5) continue;
+
+                let no = parseInt(row[0]);
+                let lx = parseFloat(row[1]);
+                let ly = parseFloat(row[2]);
+                let rx = parseFloat(row[3]);
+                let ry = parseFloat(row[4]);
+
+                if (!isNaN(no) && !isNaN(lx) && !isNaN(ly)) {
+                    parsedData.push({
+                        No: no,
+                        L_X: isNaN(lx) ? 0 : lx,
+                        L_Y: isNaN(ly) ? 0 : ly,
+                        R_X: isNaN(rx) ? 0 : rx,
+                        R_Y: isNaN(ry) ? 0 : ry
+                    });
+                }
+            }
+        }
+
         if (parsedData.length === 0) {
-            alert(`Lỗi: Không tìm thấy 36 điểm đo trong file ${filename}.`);
+            alert("No valid numerical data sequence found in Excel file.");
             return;
         }
 
-        // Lưu trạng thái cho API
-        currentPayload = { filename: filename, inspector: inspector, status: status, spec: SPEC_LIMIT, data: parsedData };
-
-        updateSummaryAndCpk(parsedData, filename, inspector, status);
-        drawScatterPlot(parsedData, filename, inspector);
-        drawTrendPlot(parsedData, filename, inspector);
+        document.getElementById('fileInfo').innerText = `3D Rendering Complete: ${filename}`;
+        updateKPIs(parsedData);
+        draw3DScatter(parsedData, filename);
     }
 
-    function updateSummaryAndCpk(data, filename, insp, stat) {
-        const L_X = data.map(d => d.L_X); const L_Y = data.map(d => d.L_Y);
-        const R_X = data.map(d => d.R_X); const R_Y = data.map(d => d.R_Y);
-
-        let cpk_Lx = getCpk(L_X, SPEC_LIMIT, -SPEC_LIMIT);
-        let cpk_Ry = getCpk(R_Y, SPEC_LIMIT, -SPEC_LIMIT);
-
-        let statusClass = stat.toUpperCase() === 'OK' ? 'status-ok' : 'status-ng';
-
-        document.getElementById('summary-stats').innerHTML = `
-            <div class="stat-card"><b>File:</b> ${filename}</div>
-            <div class="stat-card"><b>Insp:</b> ${insp}</div>
-            <div class="stat-card ${statusClass}"><b>Judge:</b> <b>${stat}</b></div>
-            <div class="stat-card"><b>Cpk (L_X):</b> ${cpk_Lx}</div>
-            <div class="stat-card"><b>Cpk (R_Y):</b> ${cpk_Ry}</div>
-        `;
+    function updateKPIs(data) {
+        document.getElementById('kpiContainer').style.display = 'grid';
+        document.getElementById('kpiSamples').innerText = data.length;
+        
+        let maxL = Math.max(...data.map(d => Math.hypot(d.L_X, d.L_Y)));
+        let maxR = Math.max(...data.map(d => Math.hypot(d.R_X, d.R_Y)));
+        
+        document.getElementById('kpiMaxL').innerText = maxL.toFixed(3);
+        document.getElementById('kpiMaxR').innerText = maxR.toFixed(3);
     }
 
-    function drawScatterPlot(data, title, insp) {
-        const traceL = { x: data.map(d => d.L_X), y: data.map(d => d.L_Y), mode: 'markers', name: 'Left (L)', marker: { color: 'royalblue', size: 8 } };
-        const traceR = { x: data.map(d => d.R_X), y: data.map(d => d.R_Y), mode: 'markers', name: 'Right (R)', marker: { color: 'crimson', size: 8 } };
-
-        const layout = {
-            title: { text: `Target Scatter Plot<br><sub>${title} | Insp: ${insp}</sub>` },
-            xaxis: { title: 'X (mm)', range: [-0.15, 0.15], zerolinecolor: 'gray' },
-            yaxis: { title: 'Y (mm)', range: [-0.15, 0.15], zerolinecolor: 'gray', scaleanchor: 'x', scaleratio: 1 },
-            shapes: [{ type: 'circle', xref: 'x', yref: 'y', x0: -SPEC_LIMIT, y0: -SPEC_LIMIT, x1: SPEC_LIMIT, y1: SPEC_LIMIT, line: { color: 'green', dash: 'dot' } }],
-            margin: { t: 60, b: 40, l: 40, r: 40 }
-        };
-        Plotly.newPlot('scatterPlot', [traceL, traceR], layout, {responsive: true});
-    }
-
-    function drawTrendPlot(data, title, insp) {
-        const x_vals = data.map(d => d.No);
-        const L_X = data.map(d => d.L_X), L_Y = data.map(d => d.L_Y);
-        const R_X = data.map(d => d.R_X), R_Y = data.map(d => d.R_Y);
-
-        // Kiểm tra Nelson Rules
-        let hasWarning = checkNelsonRule(L_X) || checkNelsonRule(L_Y) || checkNelsonRule(R_X) || checkNelsonRule(R_Y);
-        let titleHtml = `Trend Plot<br><sub>${title} | Insp: ${insp}</sub>`;
-        if(hasWarning) titleHtml += `<br><span class="warning-text">⚠️ Cảnh báo: Lệch tâm hệ thống (Nelson Rule)</span>`;
-
-        const traces = [
-            { x: x_vals, y: L_X, mode: 'lines+markers', name: 'L_X', marker: {color: 'royalblue'} },
-            { x: x_vals, y: L_Y, mode: 'lines+markers', name: 'L_Y', marker: {color: 'darkcyan'} },
-            { x: x_vals, y: R_X, mode: 'lines+markers', name: 'R_X', marker: {color: 'crimson'} },
-            { x: x_vals, y: R_Y, mode: 'lines+markers', name: 'R_Y', marker: {color: 'darkorange'} }
-        ];
-
-        const layout = {
-            title: { text: titleHtml },
-            xaxis: { title: 'No.', dtick: 5 },
-            yaxis: { title: 'Dev (mm)', range: [-0.15, 0.15] },
-            shapes: [
-                { type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: SPEC_LIMIT, y1: SPEC_LIMIT, line: { color: 'red', dash: 'dash' } },
-                { type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: -SPEC_LIMIT, y1: -SPEC_LIMIT, line: { color: 'red', dash: 'dash' } },
-                { type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: 0, y1: 0, line: { color: 'black', width: 1 } }
-            ],
-            margin: { t: 80, b: 40, l: 40, r: 40 }
-        };
-
-        // Tô đỏ nền nếu vi phạm
-        if(hasWarning) {
-            layout.shapes.push({
-                type: 'rect', xref: 'paper', yref: 'paper', x0: 0, x1: 1, y0: 0, y1: 1,
-                fillcolor: 'rgba(255, 0, 0, 0.1)', line: {width: 0}, layer: 'below'
+    function loadDemoData() {
+        let demoData = [];
+        for (let i = 1; i <= 36; i++) {
+            let angle = (i / 36) * Math.PI * 2;
+            demoData.push({
+                No: i,
+                L_X: (Math.sin(angle) * 0.15 + (Math.random() - 0.5) * 0.05),
+                L_Y: (Math.cos(angle) * 0.15 + (Math.random() - 0.5) * 0.05),
+                R_X: (Math.sin(angle + 0.5) * 0.18 + (Math.random() - 0.5) * 0.05),
+                R_Y: (Math.cos(angle + 0.5) * 0.18 + (Math.random() - 0.5) * 0.05)
             });
         }
-
-        Plotly.newPlot('trendPlot', traces, layout, {responsive: true});
+        document.getElementById('fileInfo').innerText = "Loaded Simulated Demo Dataset (36 Positions)";
+        updateKPIs(demoData);
+        draw3DScatter(demoData, "Simulated_SMT_Feeder_Demo");
     }
 
-    // V3 Action: Export PDF
-    function exportPDF() {
-        const element = document.getElementById('report-content');
-        const opt = {
-            margin:       10,
-            filename:     'QA_Report_' + currentPayload.filename + '.pdf',
-            image:        { type: 'jpeg', quality: 0.98 },
-            html2canvas:  { scale: 2, useCORS: true },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    function draw3DScatter(data, titleFilename) {
+        const traceL = {
+            x: data.map(d => d.L_X), 
+            y: data.map(d => d.L_Y), 
+            z: data.map(d => d.No),
+            mode: 'markers+lines', 
+            type: 'scatter3d', 
+            name: 'Left Head Trajectory',
+            hovertemplate: '<b>Left Head</b><br>Sample: %{z}<br>X Dev: %{x:.3f} mm<br>Y Dev: %{y:.3f} mm<extra></extra>',
+            marker: { size: 5, color: data.map(d => d.No), colorscale: 'Blues', opacity: 0.9 },
+            line: { color: '#00d2ff', width: 4 }
         };
-        html2pdf().set(opt).from(element).save();
-    }
+        
+        const traceR = {
+            x: data.map(d => d.R_X), 
+            y: data.map(d => d.R_Y), 
+            z: data.map(d => d.No),
+            mode: 'markers+lines', 
+            type: 'scatter3d', 
+            name: 'Right Head Trajectory',
+            hovertemplate: '<b>Right Head</b><br>Sample: %{z}<br>X Dev: %{x:.3f} mm<br>Y Dev: %{y:.3f} mm<extra></extra>',
+            marker: { size: 5, color: data.map(d => d.No), colorscale: 'Reds', opacity: 0.9 },
+            line: { color: '#ff4757', width: 4 }
+        };
 
-    // V3 Action: Simulate Local API
-    function saveToDB() {
-        console.log("=== SENDING TO LOCAL API (FASTAPI) ===");
-        console.log(JSON.stringify(currentPayload, null, 2));
-        alert(`Đã mô phỏng gửi dữ liệu tới Database thành công!\n\nPayload:\n- File: ${currentPayload.filename}\n- Kỹ thuật viên: ${currentPayload.inspector}\n- Số lượng điểm: ${currentPayload.data.length}\n\n(Kiểm tra Console F12 để xem JSON chi tiết)`);
+        const layout = {
+            title: { 
+                text: `3D Spatial Trajectory Analysis [${titleFilename}]`, 
+                font: { color: '#00d2ff', size: 18 } 
+            },
+            paper_bgcolor: 'rgba(0,0,0,0)', 
+            plot_bgcolor: 'rgba(0,0,0,0)',
+            margin: { l: 0, r: 0, b: 0, t: 40 },
+            scene: {
+                xaxis: { title: 'X Offset (mm)', backgroundcolor: "rgba(0,0,0,0.2)", gridcolor: "rgba(255,255,255,0.1)", color: '#fff' },
+                yaxis: { title: 'Y Offset (mm)', backgroundcolor: "rgba(0,0,0,0.2)", gridcolor: "rgba(255,255,255,0.1)", color: '#fff' },
+                zaxis: { title: 'Sample Sequence', backgroundcolor: "rgba(0,0,0,0.2)", gridcolor: "rgba(255,255,255,0.1)", color: '#fff' },
+                camera: { eye: { x: 1.4, y: 1.4, z: 1.1 } }
+            },
+            legend: { font: { color: '#fff' }, x: 0.02, y: 0.98 }
+        };
+
+        Plotly.newPlot('plot3D', [traceL, traceR], layout, { responsive: true, displayModeBar: true });
     }
 </script>
 </body>
 </html>"""
-    
+
     with open(output_filename, "w", encoding="utf-8") as f:
         f.write(html_content)
-        
-    return f"Bản nâng cấp V3 (Pro) đã được tạo thành công tại: {output_filename}"
+
+    return f"Bản nâng cấp 3D V6 đã được tạo thành công tại: {output_filename}"
+
 
 if __name__ == "__main__":
-    result = generate_offline_analyzer_v3()
+    result = generate_v6_3d_dashboard()
     print(result)
