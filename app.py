@@ -1,163 +1,293 @@
-import streamlit as st
-import matplotlib.pyplot as plt
-import numpy as np
-import seaborn as sns
+"""
+Factory Data Engineering Module: Web-App Generator V3
+Generates an advanced standalone HTML Application with Cpk calculation, 
+PDF export, Local API simulation, and Smart Drift Warning (Nelson Rules).
+"""
 
-# Thiết lập giao diện ứng dụng Web
-st.set_page_config(page_title="Motor LS16 Dashboard", layout="wide")
-st.title("📊 VISUAL QUALITY INSIGHTS: MOTOR LS16 YA SPECIFICATION")
-st.markdown("---")
+import os
 
-# Tạo các Tabs để giao diện gọn gàng, chuyên nghiệp
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "1. Pareto Lỗi", 
-    "2. Phân bố Histogram", 
-    "3. Boxplot So sánh", 
-    "4. Tương quan Scatter", 
-    "5. Biểu đồ Kiểm soát"
-])
-
-# ==========================================
-# TAB 1: PARETO
-# ==========================================
-with tab1:
-    st.header("1. Phân tích nguyên nhân lỗi (Pareto)")
-    col1, col2 = st.columns([1, 2])
+def generate_offline_analyzer_v3(output_filename: str = "Feeder_Analyzer_V3.html") -> str:
+    """Generates the V3 HTML Application with comprehensive QA features."""
     
-    with col1:
-        st.subheader("Nhập dữ liệu")
-        defects_input = st.text_input("Tên các lỗi (cách nhau bởi dấu phẩy):", "NG Ya, Insu 1000V, Insu bất thường, Không quay, B Lệch")
-        counts_input = st.text_input("Số lượng tương ứng (cách nhau bởi dấu phẩy):", "1928, 93, 11, 6, 2")
+    html_content = """<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Feeder Data Auto Analyzer V3 (Pro)</title>
+    <!-- Thư viện xử lý Excel, Biểu đồ và Xuất PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; margin: 0; padding: 20px; }
+        .container { max-width: 1400px; margin: auto; background: #fff; padding: 25px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { color: #2c3e50; font-size: 24px; border-bottom: 2px solid #3498db; padding-bottom: 10px; margin-top: 0; }
+        .control-panel { background: #eef2f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; align-items: center; gap: 15px; flex-wrap: wrap; }
+        input[type="file"] { display: none; }
+        .btn { padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; transition: background 0.3s; color: white; }
+        .btn-upload { background-color: #3498db; }
+        .btn-upload:hover { background-color: #2980b9; }
+        .btn-pdf { background-color: #9b59b6; display: none; }
+        .btn-pdf:hover { background-color: #8e44ad; }
+        .btn-api { background-color: #e67e22; display: none; }
+        .btn-api:hover { background-color: #d35400; }
+        .file-list { flex-grow: 1; font-size: 14px; color: #555; }
+        #report-content { padding: 10px; }
+        #charts-container { display: flex; flex-wrap: wrap; gap: 20px; }
+        .chart-box { flex: 1 1 48%; min-width: 500px; height: 500px; background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 10px; }
+        #summary-stats { margin-bottom: 20px; font-size: 14px; display: flex; flex-wrap: wrap; gap: 10px; }
+        .stat-card { background: #fff; border-left: 4px solid #34495e; padding: 10px 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-radius: 4px; }
+        .status-ok { border-left-color: #2ecc71; color: #27ae60; }
+        .status-ng { border-left-color: #e74c3c; color: #c0392b; }
+        .warning-text { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>🏭 SMT Feeder QA Dashboard V3</h1>
     
-    with col2:
-        try:
-            defects = [x.strip() for x in defects_input.split(',')]
-            counts = [int(x.strip()) for x in counts_input.split(',')]
-            
-            if len(defects) == len(counts):
-                fig, ax1 = plt.subplots(figsize=(8, 4))
-                cum_percentage = np.cumsum(counts) / sum(counts) * 100
+    <div class="control-panel">
+        <label for="excelUpload" class="btn btn-upload">📂 Chọn File Excel</label>
+        <input type="file" id="excelUpload" accept=".xlsx, .xls, .xlsm" multiple>
+        <select id="fileSelector" style="display:none; padding: 8px; border-radius: 4px;"></select>
+        <div class="file-list" id="fileInfo">Chưa có file nào được chọn.</div>
+        
+        <!-- Các nút chức năng V3 -->
+        <button id="btnPdf" class="btn btn-pdf" onclick="exportPDF()">📄 Xuất PDF</button>
+        <button id="btnApi" class="btn btn-api" onclick="saveToDB()">💾 Lưu Database (Mock API)</button>
+    </div>
+
+    <!-- Vùng xuất báo cáo PDF -->
+    <div id="report-content">
+        <div id="summary-stats"></div>
+        <div id="charts-container">
+            <div id="scatterPlot" class="chart-box"></div>
+            <div id="trendPlot" class="chart-box"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let uploadedFiles = {}; 
+    let currentPayload = {}; // Dùng để lưu trữ trạng thái gửi API
+    const SPEC_LIMIT = 0.12;
+
+    document.getElementById('excelUpload').addEventListener('change', handleFileSelect, false);
+    document.getElementById('fileSelector').addEventListener('change', function(e) {
+        processAndDraw(uploadedFiles[e.target.value], e.target.value);
+    });
+
+    function handleFileSelect(e) {
+        const files = e.target.files;
+        if (files.length === 0) return;
+        
+        document.getElementById('fileInfo').innerText = `Đang xử lý ${files.length} file...`;
+        const selector = document.getElementById('fileSelector');
+        selector.innerHTML = '';
+        uploadedFiles = {};
+
+        let filesProcessed = 0;
+
+        Array.from(files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(firstSheet, {header: 1});
                 
-                ax1.bar(defects, counts, color="crimson")
-                ax1.set_ylabel("Số lượng lỗi", color="crimson")
-                ax1_twin = ax1.twinx()
-                ax1_twin.plot(defects, cum_percentage, color="blue", marker="D")
-                ax1_twin.set_ylabel("Tích lũy (%)", color="blue")
+                uploadedFiles[file.name] = jsonData;
                 
-                st.pyplot(fig)
-            else:
-                st.error("Số lượng tên lỗi và số lượng dữ liệu không khớp nhau!")
-        except Exception as e:
-            st.error(f"Lỗi nhập dữ liệu: {e}")
+                const option = document.createElement('option');
+                option.value = file.name;
+                option.text = file.name;
+                selector.appendChild(option);
 
-# ==========================================
-# TAB 2: HISTOGRAM
-# ==========================================
-with tab2:
-    st.header("2. Phân bố Phân tích Đặc tính Ya & So sánh USL Spec")
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.subheader("Cài đặt thông số")
-        usl_current = st.number_input("USL Hiện tại (mm):", value=50.0)
-        usl_proposed = st.number_input("USL Đề xuất (mm):", value=55.0)
-        mean_val = st.number_input("Giá trị trung bình Ya:", value=46.2)
-        std_val = st.number_input("Độ lệch chuẩn Ya:", value=1.95)
-    
-    with col2:
-        np.random.seed(42)
-        ya_data = np.random.normal(loc=mean_val, scale=std_val, size=2000)
-        
-        fig, ax2 = plt.subplots(figsize=(8, 4))
-        sns.histplot(ya_data, kde=True, color="teal", bins=30, ax=ax2)
-        ax2.axvline(usl_current, color="red", linestyle="--", label=f"USL Cũ ({usl_current})")
-        ax2.axvline(usl_proposed, color="green", linestyle="-.", label=f"USL Mới ({usl_proposed})")
-        ax2.legend()
-        st.pyplot(fig)
+                filesProcessed++;
+                if(filesProcessed === files.length) {
+                    selector.style.display = files.length > 1 ? 'block' : 'none';
+                    document.getElementById('fileInfo').innerText = `Hoàn tất. Đang hiển thị file: ${files[0].name}`;
+                    
+                    // Hiển thị nút V3
+                    document.getElementById('btnPdf').style.display = 'block';
+                    document.getElementById('btnApi').style.display = 'block';
+                    
+                    processAndDraw(uploadedFiles[files[0].name], files[0].name);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        });
+    }
 
-# ==========================================
-# TAB 3: BOXPLOT (ĐÃ SỬA LỖI TẠI ĐÂY)
-# ==========================================
-with tab3:
-    st.header("3. Boxplot: Mức Ya Motor vs Khả năng Hoạt động")
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.subheader("Nhập dữ liệu")
-        ok_input = st.text_input("Dữ liệu Ya (Feeder OK):", "41.5, 45.7, 48.7, 51.1, 51.7, 54.1, 56.1, 57.0, 58.3")
-        ng_input = st.text_input("Dữ liệu Ya (Feeder NG):", "66.7, 80.0")
-        spec_box_old = st.number_input("Tiêu chuẩn cũ MAX (mm):", value=50.0)
-        spec_box_new = st.number_input("Tiêu chuẩn mới MAX (mm):", value=55.0)
-        
-    with col2:
-        try:
-            ya_ok = [float(x.strip()) for x in ok_input.split(',')]
-            ya_ng = [float(x.strip()) for x in ng_input.split(',')]
+    // JS Math functions for Cpk calculation
+    function getMean(arr) { return arr.reduce((a, b) => a + b, 0) / arr.length; }
+    function getStdDev(arr, mean) {
+        let sum = arr.reduce((a, b) => a + Math.pow(b - mean, 2), 0);
+        return Math.sqrt(sum / (arr.length - 1)) || 0.0001; // Tránh chia cho 0
+    }
+    function getCpk(arr, usl, lsl) {
+        let mean = getMean(arr);
+        let std = getStdDev(arr, mean);
+        let cpku = (usl - mean) / (3 * std);
+        let cpkl = (mean - lsl) / (3 * std);
+        return Math.min(cpku, cpkl).toFixed(2);
+    }
+
+    // Nelson Rule: 7 consecutive points on the same side of 0
+    function checkNelsonRule(arr) {
+        let countPos = 0, countNeg = 0;
+        for(let v of arr) {
+            if(v > 0) { countPos++; countNeg = 0; }
+            else if (v < 0) { countNeg++; countPos = 0; }
+            else { countPos = 0; countNeg = 0; }
             
-            fig, ax3 = plt.subplots(figsize=(8, 4))
-            ax3.boxplot([ya_ok, ya_ng], patch_artist=True)
-            ax3.set_xticks([1, 2])
-            ax3.set_xticklabels(["ITF Feeder OK", "ITF Feeder NG"]) # Đã sửa cách gán tên nhãn an toàn
-            ax3.axhline(spec_box_old, color="red", linestyle="--", label="Cũ")
-            ax3.axhline(spec_box_new, color="green", linestyle="-.", label="Mới")
-            ax3.legend()
-            st.pyplot(fig)
-        except Exception as e:
-            st.error(f"Lỗi dữ liệu: {e}")
+            if (countPos >= 7 || countNeg >= 7) return true;
+        }
+        return false;
+    }
 
-# ==========================================
-# TAB 4: SCATTER
-# ==========================================
-with tab4:
-    st.header("4. Biểu đồ Tương quan: Motor Ya vs Feeder Offset L")
-    col1, col2 = st.columns([1, 2])
-    
-    with col1:
-        st.subheader("Nhập dữ liệu")
-        x_input = st.text_input("Giá trị Ya Motor (X):", "41.5, 45.7, 48.7, 51.1, 51.7, 54.1, 56.1, 57.0, 66.7")
-        y_input = st.text_input("Offset Feeder (Y):", "1.359, 1.391, 1.359, 1.380, 1.385, 1.390, 1.391, 1.391, 1.850")
+    function processAndDraw(jsonData, filename) {
+        let parsedData = [];
+        let inspector = "Unknown", status = "Unknown";
         
-    with col2:
-        try:
-            x_vals = [float(x.strip()) for x in x_input.split(',')]
-            y_vals = [float(y.strip()) for y in y_input.split(',')]
-            
-            if len(x_vals) == len(y_vals):
-                fig, ax4 = plt.subplots(figsize=(8, 4))
-                ax4.scatter(x_vals, y_vals, color="darkorange", s=80, edgecolors="k")
-                ax4.axvline(50.0, color="red", linestyle="--")
-                ax4.axvline(55.0, color="green", linestyle="-.")
-                st.pyplot(fig)
-            else:
-                st.error("Số lượng dữ liệu trục X và Y phải bằng nhau!")
-        except Exception as e:
-            st.error(f"Lỗi dữ liệu: {e}")
+        if(jsonData.length > 0 && jsonData[0].length >= 5) {
+            inspector = jsonData[0][3] || "Unknown";
+            status = jsonData[0][4] || "Unknown";
+        }
 
-# ==========================================
-# TAB 5: CONTROL CHART
-# ==========================================
-with tab5:
-    st.header("5. Biểu đồ Kiểm soát: Tỷ lệ %NG")
-    col1, col2 = st.columns([1, 2])
+        // Auto-detect block starting with '1'
+        for (let i = 0; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (row && row.length >= 5 && String(row[0]).trim() === '1') {
+                for(let j = 0; j < 36; j++) {
+                    if (i + j < jsonData.length && jsonData[i+j].length >= 5) {
+                        let rowData = jsonData[i+j];
+                        parsedData.push({
+                            No: parseInt(rowData[0]),
+                            L_X: parseFloat(rowData[1] || 0), L_Y: parseFloat(rowData[2] || 0),
+                            R_X: parseFloat(rowData[3] || 0), R_Y: parseFloat(rowData[4] || 0)
+                        });
+                    }
+                }
+                break;
+            }
+        }
+
+        if (parsedData.length === 0) {
+            alert(`Lỗi: Không tìm thấy 36 điểm đo trong file ${filename}.`);
+            return;
+        }
+
+        // Lưu trạng thái cho API
+        currentPayload = { filename: filename, inspector: inspector, status: status, spec: SPEC_LIMIT, data: parsedData };
+
+        updateSummaryAndCpk(parsedData, filename, inspector, status);
+        drawScatterPlot(parsedData, filename, inspector);
+        drawTrendPlot(parsedData, filename, inspector);
+    }
+
+    function updateSummaryAndCpk(data, filename, insp, stat) {
+        const L_X = data.map(d => d.L_X); const L_Y = data.map(d => d.L_Y);
+        const R_X = data.map(d => d.R_X); const R_Y = data.map(d => d.R_Y);
+
+        let cpk_Lx = getCpk(L_X, SPEC_LIMIT, -SPEC_LIMIT);
+        let cpk_Ry = getCpk(R_Y, SPEC_LIMIT, -SPEC_LIMIT);
+
+        let statusClass = stat.toUpperCase() === 'OK' ? 'status-ok' : 'status-ng';
+
+        document.getElementById('summary-stats').innerHTML = `
+            <div class="stat-card"><b>File:</b> ${filename}</div>
+            <div class="stat-card"><b>Insp:</b> ${insp}</div>
+            <div class="stat-card ${statusClass}"><b>Judge:</b> <b>${stat}</b></div>
+            <div class="stat-card"><b>Cpk (L_X):</b> ${cpk_Lx}</div>
+            <div class="stat-card"><b>Cpk (R_Y):</b> ${cpk_Ry}</div>
+        `;
+    }
+
+    function drawScatterPlot(data, title, insp) {
+        const traceL = { x: data.map(d => d.L_X), y: data.map(d => d.L_Y), mode: 'markers', name: 'Left (L)', marker: { color: 'royalblue', size: 8 } };
+        const traceR = { x: data.map(d => d.R_X), y: data.map(d => d.R_Y), mode: 'markers', name: 'Right (R)', marker: { color: 'crimson', size: 8 } };
+
+        const layout = {
+            title: { text: `Target Scatter Plot<br><sub>${title} | Insp: ${insp}</sub>` },
+            xaxis: { title: 'X (mm)', range: [-0.15, 0.15], zerolinecolor: 'gray' },
+            yaxis: { title: 'Y (mm)', range: [-0.15, 0.15], zerolinecolor: 'gray', scaleanchor: 'x', scaleratio: 1 },
+            shapes: [{ type: 'circle', xref: 'x', yref: 'y', x0: -SPEC_LIMIT, y0: -SPEC_LIMIT, x1: SPEC_LIMIT, y1: SPEC_LIMIT, line: { color: 'green', dash: 'dot' } }],
+            margin: { t: 60, b: 40, l: 40, r: 40 }
+        };
+        Plotly.newPlot('scatterPlot', [traceL, traceR], layout, {responsive: true});
+    }
+
+    function drawTrendPlot(data, title, insp) {
+        const x_vals = data.map(d => d.No);
+        const L_X = data.map(d => d.L_X), L_Y = data.map(d => d.L_Y);
+        const R_X = data.map(d => d.R_X), R_Y = data.map(d => d.R_Y);
+
+        // Kiểm tra Nelson Rules
+        let hasWarning = checkNelsonRule(L_X) || checkNelsonRule(L_Y) || checkNelsonRule(R_X) || checkNelsonRule(R_Y);
+        let titleHtml = `Trend Plot<br><sub>${title} | Insp: ${insp}</sub>`;
+        if(hasWarning) titleHtml += `<br><span class="warning-text">⚠️ Cảnh báo: Lệch tâm hệ thống (Nelson Rule)</span>`;
+
+        const traces = [
+            { x: x_vals, y: L_X, mode: 'lines+markers', name: 'L_X', marker: {color: 'royalblue'} },
+            { x: x_vals, y: L_Y, mode: 'lines+markers', name: 'L_Y', marker: {color: 'darkcyan'} },
+            { x: x_vals, y: R_X, mode: 'lines+markers', name: 'R_X', marker: {color: 'crimson'} },
+            { x: x_vals, y: R_Y, mode: 'lines+markers', name: 'R_Y', marker: {color: 'darkorange'} }
+        ];
+
+        const layout = {
+            title: { text: titleHtml },
+            xaxis: { title: 'No.', dtick: 5 },
+            yaxis: { title: 'Dev (mm)', range: [-0.15, 0.15] },
+            shapes: [
+                { type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: SPEC_LIMIT, y1: SPEC_LIMIT, line: { color: 'red', dash: 'dash' } },
+                { type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: -SPEC_LIMIT, y1: -SPEC_LIMIT, line: { color: 'red', dash: 'dash' } },
+                { type: 'line', xref: 'paper', x0: 0, x1: 1, yref: 'y', y0: 0, y1: 0, line: { color: 'black', width: 1 } }
+            ],
+            margin: { t: 80, b: 40, l: 40, r: 40 }
+        };
+
+        // Tô đỏ nền nếu vi phạm
+        if(hasWarning) {
+            layout.shapes.push({
+                type: 'rect', xref: 'paper', yref: 'paper', x0: 0, x1: 1, y0: 0, y1: 1,
+                fillcolor: 'rgba(255, 0, 0, 0.1)', line: {width: 0}, layer: 'below'
+            });
+        }
+
+        Plotly.newPlot('trendPlot', traces, layout, {responsive: true});
+    }
+
+    // V3 Action: Export PDF
+    function exportPDF() {
+        const element = document.getElementById('report-content');
+        const opt = {
+            margin:       10,
+            filename:     'QA_Report_' + currentPayload.filename + '.pdf',
+            image:        { type: 'jpeg', quality: 0.98 },
+            html2canvas:  { scale: 2, useCORS: true },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+        html2pdf().set(opt).from(element).save();
+    }
+
+    // V3 Action: Simulate Local API
+    function saveToDB() {
+        console.log("=== SENDING TO LOCAL API (FASTAPI) ===");
+        console.log(JSON.stringify(currentPayload, null, 2));
+        alert(`Đã mô phỏng gửi dữ liệu tới Database thành công!\n\nPayload:\n- File: ${currentPayload.filename}\n- Kỹ thuật viên: ${currentPayload.inspector}\n- Số lượng điểm: ${currentPayload.data.length}\n\n(Kiểm tra Console F12 để xem JSON chi tiết)`);
+    }
+</script>
+</body>
+</html>"""
     
-    with col1:
-        st.subheader("Nhập dữ liệu")
-        p_input = st.text_input("Tỷ lệ NG 10 ngày (%):", "2.57, 2.60, 2.51, 2.55, 2.58, 0.16, 0.15, 0.14, 0.16, 0.15")
+    with open(output_filename, "w", encoding="utf-8") as f:
+        f.write(html_content)
         
-    with col2:
-        try:
-            p_rates = [float(x.strip()) for x in p_input.split(',')]
-            days = [f"Day {i}" for i in range(1, len(p_rates)+1)]
-            
-            if len(p_rates) >= 5:
-                fig, ax5 = plt.subplots(figsize=(8, 4))
-                ax5.plot(days[:5], p_rates[:5], marker="o", color="crimson", label="Spec Cũ")
-                ax5.plot(days[5:], p_rates[5:], marker="s", color="forestgreen", label="Spec Mới")
-                ax5.axhline(np.mean(p_rates[:5]), color="red", linestyle=":")
-                ax5.axhline(np.mean(p_rates[5:]), color="green", linestyle=":")
-                ax5.legend()
-                st.pyplot(fig)
-            else:
-                st.warning("Cần nhập ít nhất 5 ngày dữ liệu để vẽ biểu đồ.")
-        except Exception as e:
-            st.error(f"Lỗi dữ liệu: {e}")
+    return f"Bản nâng cấp V3 (Pro) đã được tạo thành công tại: {output_filename}"
+
+if __name__ == "__main__":
+    result = generate_offline_analyzer_v3()
+    print(result)
